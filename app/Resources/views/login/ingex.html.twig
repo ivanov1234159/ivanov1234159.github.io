@@ -1,0 +1,97 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1 align="center">{{ kingdom_name }}</h1>
+    <hr/>
+    <table border="1" align="center">
+        <tr>
+            {% for resource,value in resOfUK %}
+                <td><b>{{ resource }}: {{ value }}</b></td>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for maxValue in maxResOfUK %}
+                <td><b>MAX: {{ maxValue }}</b></td>
+            {% endfor %}
+        </tr>
+    </table>
+    <hr/>
+    {% for building in bldngInUK %}
+        <div style="display: inline-block; width: 30%; margin-right: 1em; margin-bottom: 1em; vertical-align:top;">
+            <table border="1" align="center" width="300px">
+                <tr style="text-align: center; background-color: #aaaaaa;">
+                    <td colspan="2"><b>{{ building.name }} ({{ building.level }} level)</b></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Give/hour: </b><span>{{ building.resGPHGname }}</span></td>
+                </tr>
+                <tr style="text-align: center; background-color: #bbbbbb;">
+                    <td colspan="2"><b>Need for level-up:</b></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Resources: </b><span>{{ building.resNPLGname }}</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Building level: </b><span>{{ building.NBLGname }}</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Time: </b><span>{{ (building.timeNPL * (building.level + 1))|intToTime }}</span></td>
+                </tr>
+                <tr style="text-align: center; background-color: #cccccc;">
+                    <td colspan="2"><b>Actions: </b></td>
+                </tr>
+                <tr style="text-align: center;">
+                    <td {% if building.actionLabel == null %}colspan="2"{% endif %}>
+                        {% if building.readyOn == null %}<a href="/level-up/{{ building.name }}">Level up</a>
+                        {% else %}<div id="clockdiv{{ building.name }}">00:00:00</div>
+                        {% endif %}
+                    </td>
+                    {% if building.actionLabel != null %}
+                    <td><a href="{{ building.action }}">{{ building.actionLabel }}</a></td>
+                    {% endif %}
+                </tr>
+            </table>
+        </div>
+    {% endfor %}
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    {% for building in bldngInUK %}
+        {% if building.readyOn != null %}
+        var deadline{{ building.name }} = '{{ building.readyOn }}';
+        function getTimeRemaining{{ building.name }}(endtime){
+            var t = Date.parse(endtime) - Date.parse(new Date());
+            var seconds = Math.floor( (t/1000) % 60 );
+            var minutes = Math.floor( (t/1000/60) % 60 );
+            var hours = Math.floor( (t/(1000*60*60)) );
+            return {
+                'total': t,
+                'hours': hours,
+                'minutes': minutes,
+                'seconds': seconds
+            };
+        }
+        function initializeClock{{ building.name }}(id, endtime){
+            var clock = document.getElementById(id);
+            var timeinterval = setInterval(function(){
+                var t = getTimeRemaining{{ building.name }}(endtime);
+                var h = t.hours;
+                var m = t.minutes;
+                var s = t.seconds;
+                if(h < 10){ h = '0' + h; }
+                if(m < 10){ m = '0' + m; }
+                if(s < 10){ s = '0' + s; }
+                clock.innerHTML = h + ':' + m + ':' + s;
+                if(t.total<=0){
+                    clearInterval(timeinterval);
+                    clock.innerHTML = 'REFRESH PAGE';
+                    window.location.assign("localhost:8000/level-up/{{ building.name }}/readyOn/{{ building.readyOn }}");
+                }
+            },1000);
+        }
+        initializeClock{{ building.name }}('clockdiv{{ building.name }}', deadline{{ building.name }});
+        {% endif %}
+    {% endfor %}
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1 align="center">{{ kingdom_name }}</h1>
+    <hr/>
+    <table border="1" align="center">
+        <tr>
+            {% for resource,value in resOfUK %}
+                <td><b>{{ resource }}: {{ value }}</b></td>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for maxValue in maxResOfUK %}
+                <td><b>MAX: {{ maxValue }}</b></td>
+            {% endfor %}
+        </tr>
+    </table>
+    <hr/>
+    {% for unit in unitsInUK %}
+        <div style="display: inline-block; width: 30%; margin-right: 1em; margin-bottom: 1em; vertical-align:top;">
+            <table border="1" align="center" width="300px">
+                <tr style="text-align: center; background-color: #aaaaaa;">
+                    <td colspan="2"><b>{{ unit.name }} (count: {{ unit.count }})</b></td>
+                </tr>
+                <tr>
+                    <td><b>Attack: </b><span>{{ unit.attack }}</span></td>
+                    <td><b>Live: </b><span>{{ unit.live }}</span></td>
+                </tr>
+                <tr style="text-align: center; background-color: #bbbbbb;">
+                    <td colspan="2"><b>Need for unit:</b></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Resources: </b><span>{{ unit.resNPUGname }}</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Building level: </b><span>{{ unit.NBLGname }}</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Time: </b><span>{{ unit.timePU|intToTime }}</span></td>
+                </tr>
+                <tr style="text-align: center; background-color: #cccccc;">
+                    <td colspan="2"><b>Actions: </b></td>
+                </tr>
+                <tr style="text-align: center;">
+                    <td colspan="2">
+                        <input type="range" id="myRange" value="0" max="10" onclick="myFunction{{ unit.name }}()">
+                        <a id="demo{{ unit.name }}" href="">select count</a>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    {% endfor %}
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    {% for unit in unitsInUK %}
+    function myFunction{{ unit.name }}() {
+        var x = document.getElementById("myRange").value;
+        document.getElementById("demo{{ unit.name }}").href = "/unit/order/{{ unit.name }}/count/" + x;
+        document.getElementById("demo{{ unit.name }}").innerHTML = 'Order ' + x + ' units';
+    }
+    {% endfor %}
+</script>
+{% endblock %}

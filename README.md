@@ -1,2 +1,4 @@
-# onlinegame
-online strategy game made on PHP 7.1 and Symfony 3.3
+.checkout
+=========
+
+A Symfony project created on December 15, 2017, 4:23 pm.

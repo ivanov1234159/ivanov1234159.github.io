@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    {% spaceless %}
+        <h1>Login</h1>
+        <b style="color:red;">{{ error }}</b>
+        <form method="post" id="login_form">
+            {{ form_rest(form) }}
+        </form>
+        <a href="{{ path('homepage') }}">Back</a>
+    {% endspaceless %}
+{% endblock %}
+

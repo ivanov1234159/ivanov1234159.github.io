@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Welcome to Online strategy game №1!{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('icon.jpg') }}" />
+    {% block stylesheets %}
+        <style>
+            body { background: #F5F5F5; font: 18px/1.5 sans-serif; }
+            header { margin: 1em auto; max-width: 1100px; width: 95%; }
+            main { margin-bottom: 2em; font-size: 75%;}
+            footer { margin: 1em auto; max-width: 1100px; width: 95%; }
+            h1, h2 { line-height: 1.2; margin: 0 0 .5em; }
+            h1 { font-size: 36px; }
+            h2 { font-size: 21px; margin-bottom: 1em; }
+            p { margin: 0 0 1em 0; }
+            a { color: #00f0f0; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            code { background: #F5F5F5; max-width: 100px; padding: 2px 6px; word-wrap: break-word; }
+            #wrapper { background: #FFF; margin: 1em auto; max-width: 1100px; width: 95%; }
+            #container { padding: 2em; }
+            #icon-status { float: left; height: 64px; margin-right: 1em; margin-top: -4px; width: 64px; }
+        </style>
+    {% endblock %}
+</head>
+<body>
+<header>
+    <div style="font-size: 21px; margin-bottom: 1em; text-align: center;">
+        <div style="float: left;">
+            <a href="{{ path('homepage') }}">Home</a>
+            <span> | </span>
+        </div>&nbsp;
+        {% if is_logged is defined and is_logged == true %}
+            <a href="{{ path('homepage') }}">Map</a>
+            <span> | </span>
+            <a href="{{ path('order_unit') }}">My units</a>
+            <span> | </span>
+            <a href="{{ path('homepage') }}">Battle history</a>
+        {% endif %}
+        <div style="float: right;">
+            {% if nickname is defined %}<span> | Welcome, {{ nickname }}!</span>{% endif %}
+            <span> | </span>
+        {% if is_logged is defined and is_logged == true %}
+            <a href="{{ path('profile') }}">Profile</a>
+            <span> | </span>
+            <a href="{{ path('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ path('register') }}">Register</a>
+            <span> | </span>
+            <a href="{{ path('login') }}">Login</a>
+        {% endif %}
+        </div>
+    </div>
+</header>
+<main>
+    <div id="wrapper">
+        <div id="container">
+            {% block body %}{% endblock %}
+        </div>
+    </div>
+</main>
+<footer>
+    {% block javascripts %}{% endblock %}
+</footer>
+</body>
+</html>
