@@ -217,7 +217,7 @@ class BuildingController extends DefaultController
 
         $testResNPU = $this->checkResNPU($em, $unit, $count, $kingdomId);
 
-        if(!$testResNPU){
+        if($testResNPU){
             $dt = new \DateTime();
             $dt->setTimezone(new \DateTimeZone('Europe/Sofia'));
             $now = $dt->format("Y-m-d H:i:s");
@@ -373,15 +373,17 @@ class BuildingController extends DefaultController
         foreach($try as $resNeed){
             foreach($resOfUK as $resHave){
                 if(!array_key_exists($resHave['name'], $return)){
-                    $return[$resHave['name']] = 0;
+                    $return[$resHave['name']] = intval($resHave['value']);
+                    $resNeed['value'] = (intval($resNeed['value']) * $unit_count);
                 }
 
-                $resNeed['value'] = ($resNeed['value'] * $unit_count);
 
-                if($resNeed['name'] == $resHave['name'] && $resHave['value'] < $resNeed['value']){
+                if($resNeed['name'] == $resHave['name']
+                    && intval($resHave['value']) < intval($resNeed['value'])){
                     return false;
-                }elseif($resNeed['name'] == $resHave['name'] && $resHave['value'] >= $resNeed['value']){
-                    $return[$resHave['name']] += $resHave['value'] - $resNeed['value'];
+                }elseif($resNeed['name'] == $resHave['name']
+                    && intval($resHave['value']) >= intval($resNeed['value'])){
+                    $return[$resHave['name']] -= intval($resNeed['value']);
                 }
             }
         }

@@ -18,25 +18,15 @@ where kngdm_unit.id_kingdom=? and kngdm_unit.id_unit=?;");
             EVERY ".$timePU." SECOND 
             STARTS '".$now."' 
             ENDS '".$readyOn."'
-        DO
-            select `count`, order_count into @counter, @order_count from kngdm_unit 
-            where id_kingdom=".$id_kingdom." and id_unit=".$unit_id.";
-
-            update kngdm_unit set `count` = if(@order_count > 0, (@counter + 1), @counter)
+        DO 
+            update kngdm_unit set `count` = if((select order_count from kngdm_unit 
+            where id_kingdom=".$id_kingdom." and id_unit=".$unit_id.") > 0, ((
+            select `count` from kngdm_unit 
+            where id_kingdom=".$id_kingdom." and id_unit=".$unit_id.") + 1), (
+            select `count` from kngdm_unit 
+            where id_kingdom=".$id_kingdom." and id_unit=".$unit_id."))
             where id_kingdom=".$id_kingdom." and id_unit=".$unit_id.";");
         $create_event->execute();
-        $alter_event = $db->prepare("alter EVENT `OrderCount".$id_kingdom.$unit_id."`
-        ON SCHEDULE 
-            EVERY ".$timePU." SECOND 
-            STARTS '".$now."' 
-            ENDS '".$readyOn."'
-        DO
-            select `count`, order_count into @counter, @order_count from kngdm_unit 
-            where id_kingdom=".$id_kingdom." and id_unit=".$unit_id.";
-
-            update kngdm_unit set `count` = if(@order_count > 0, (@counter + 1), @counter)
-            where id_kingdom=".$id_kingdom." and id_unit=".$unit_id.";");
-        $alter_event->execute();
     }
 
     public function getNBLOfUnit(string $unit_name){
