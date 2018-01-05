@@ -27,7 +27,7 @@ interface UnitInterface
     public function getTimePU(): int;
 
     public function setCount(int $count);
-    public function getCount(): int;
+    public function getCount();
 
     public function setOrderCount(int $orderCount);
     public function getOrderCount(): int;

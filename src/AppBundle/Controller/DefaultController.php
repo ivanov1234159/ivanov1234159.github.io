@@ -86,15 +86,14 @@ class DefaultController extends Controller
     }
 
     protected function checkNickname(ObjectManager $em, Session $session){
-        if(get_class($this) == DefaultController::class){
-            $return = $this->render('default/index.html.twig');
-        }else{
-            $return = $this->redirectToRoute("homepage");
+        if(!$session->has('nickname')){
+            return $this->render('default/index.html.twig');
+        }elseif(get_class($this) != DefaultController::class
+            && $em->getRepository(User::class)->findOneBy([
+                "nickname" => $session->get("nickname")
+            ]) == null){
+            return $this->redirectToRoute("homepage");
         }
-
-        if(!$session->has('nickname') || $em->getRepository(User::class)->findOneBy([
-            "nickname" => $session->get("nickname")
-        ]) == null){ return $return; }
 
         return $session->get("nickname");
     }
@@ -206,15 +205,16 @@ class DefaultController extends Controller
 
         $arr = [];
         foreach($try as $item){
-            $arr[] = $item['name'].' ('.$item['level'].' level)';
+            foreach($bldngInUK as $item2){
+                $arr2[] = ' ('.$item2->getLevel().' level)';
+                if($item['name'] == $item2->getName() && $item2->getLevel() < intval($item['level'])){
+                        $arr[] = $item['name'].' ('.$item['level'].' level)';
+                }
+            }
         }
 
-        $arr2 = [];
-        foreach($bldngInUK as $item){
-            $arr2[] = $item->getName().' ('.$item->getLevel().' level)';
-        }
 
-        $return = implode(", ", array_diff($arr, $arr2));
+        $return = implode(", ", $arr);
         if(strlen($return) == 0 || $return == '' || empty($return)){
             $return = 'no need';
         }
@@ -228,6 +228,7 @@ class DefaultController extends Controller
         }
 
         $try = $em->getRepository(Building::class)->getNPLOfBuilding($building_name);
+
         if(empty($try)){
             return $this->redirectToRoute("logout");//TODO: this must never be reached
         }

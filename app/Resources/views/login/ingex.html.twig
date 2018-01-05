@@ -85,8 +85,8 @@
                 clock.innerHTML = h + ':' + m + ':' + s;
                 if(t.total<=0){
                     clearInterval(timeinterval);
-                    clock.innerHTML = 'REFRESH PAGE';
-                    window.location.assign("localhost:8000/level-up/{{ building.name }}/readyOn/{{ building.readyOn }}");
+                    window.location.href = "http://localhost:8000/level-up/{{ building.name }}/readyOn/{{ building.readyOn }}";
+                    clock.innerHTML = '00:00:00';
                 }
             },1000);
         }

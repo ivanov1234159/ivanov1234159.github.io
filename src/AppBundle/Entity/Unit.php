@@ -192,9 +192,9 @@ class Unit implements UnitInterface
         $this->count = $count;
     }
     /**
-     * @return int
+     * @return int|null
      */
-    public function getCount(): int
+    public function getCount()
     {
         return $this->count;
     }

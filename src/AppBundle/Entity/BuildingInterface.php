@@ -36,7 +36,7 @@ interface BuildingInterface
     public function getActionLabel();
 
     public function setLevel(int $level);
-    public function getLevel(): int;
+    public function getLevel();
 
     public function setReadyOn($readyOn);
     public function getReadyOn();

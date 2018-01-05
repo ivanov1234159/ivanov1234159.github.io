@@ -43,10 +43,15 @@
                 </tr>
                 <tr style="text-align: center;">
                     <td colspan="2">
-                        <input type="range" id="myRange" value="0" max="10" onclick="myFunction{{ unit.name }}()">
+                        <input type="range" id="myRange{{ unit.name }}" value="0"
+                               max="{{ maxUnitCountArr[unit.name] }}" onclick="myFunction{{ unit.name }}()">
                         <a id="demo{{ unit.name }}" href="">select count</a>
                     </td>
-                </tr>
+                </tr>{% if unit.orderCount > 0 %}
+                <tr style="text-align: center;">
+                    <td><b>1 unit ready after:</b> <span id="clockdiv{{ unit.name }}">00:00:00</span></td>
+                    <td>{{ unit.orderCount - 1 }} units left</td>
+                </tr>{% endif %}
             </table>
         </div>
     {% endfor %}
@@ -56,10 +61,47 @@
 <script>
     {% for unit in unitsInUK %}
     function myFunction{{ unit.name }}() {
-        var x = document.getElementById("myRange").value;
-        document.getElementById("demo{{ unit.name }}").href = "/unit/order/{{ unit.name }}/count/" + x;
-        document.getElementById("demo{{ unit.name }}").innerHTML = 'Order ' + x + ' units';
+        var x = document.getElementById("myRange{{ unit.name }}").value;
+        if(x > 0){
+            document.getElementById("demo{{ unit.name }}").href = "/unit/order/{{ unit.name }}/count/" + x;
+            document.getElementById("demo{{ unit.name }}").innerHTML = 'Order ' + x + ' units';
+        }
     }
+    {% if unit.orderCount > 0 %}
+    var deadline{{ unit.name }} = '{{ unit.timePU|intPlusNowDateTime }}';
+    function getTimeRemaining{{ unit.name }}(endtime){
+        var t = Date.parse(endtime) - Date.parse(new Date());
+        var seconds = Math.floor( (t/1000) % 60 );
+        var minutes = Math.floor( (t/1000/60) % 60 );
+        var hours = Math.floor( (t/(1000*60*60)) );
+        return {
+            'total': t,
+            'hours': hours,
+            'minutes': minutes,
+            'seconds': seconds
+        };
+    }
+    function initializeClock{{ unit.name }}(id, endtime){
+        var clock = document.getElementById(id);
+        var timeinterval = setInterval(function(){
+            var t = getTimeRemaining{{ unit.name }}(endtime);
+            var h = t.hours;
+            var m = t.minutes;
+            var s = t.seconds;
+            if(h < 10){ h = '0' + h; }
+            if(m < 10){ m = '0' + m; }
+            if(s < 10){ s = '0' + s; }
+            clock.innerHTML = h + ':' + m + ':' + s;
+            if(t.total<=0){
+                clearInterval(timeinterval);
+                window.location.reload();
+                clock.innerHTML = '00:00:00';
+            }
+        },1000);
+    }
+    initializeClock{{ unit.name }}('clockdiv{{ unit.name }}', deadline{{ unit.name }});
+    {% endif %}
+
     {% endfor %}
 </script>
 {% endblock %}

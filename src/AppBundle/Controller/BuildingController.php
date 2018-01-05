@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 
 class BuildingController extends DefaultController
 {
+    const PALACE_ID = 12;
 
     /**
      * @Route("/level-up/{building}", name="level-up", requirements={"building"="[A-Za-z]+"})
@@ -35,13 +36,15 @@ class BuildingController extends DefaultController
             return $this->redirectToRoute("logout");//TODO: this can and must never be reached
         }
 
-        $kingdomId = $em->getRepository(User::class)->findOneBy(["nickname"=>$user->getNickname()])->getKingdomId();
-        $builgingLevel = $em->getRepository(Building::class)->getLevel($kingdomId, $try->getName())[0]['level'];
+        $kingdomId = $em->getRepository(User::class)
+            ->findOneBy(["nickname"=>$user->getNickname()])->getKingdomId();
+        $builgingLevel = $em->getRepository(Building::class)
+            ->getLevel($kingdomId, $try->getName())[0]['level'];
 
 
         $dt = new \DateTime();
         $dt->setTimezone(new \DateTimeZone('Europe/Sofia'));
-        $readyOn = $dt->setTimestamp($dt->getTimestamp() + $try->getTimeNPL())->format("Y-m-d H:i:s");
+        $readyOn = $dt->setTimestamp($dt->getTimestamp() + ($try->getTimeNPL() * $builgingLevel + 2))->format("Y-m-d H:i:s");
 
         $tmp = $this->checkResNPL($em, $building, $builgingLevel, $kingdomId);
         if($tmp instanceof Response){ return $tmp; }
@@ -55,7 +58,8 @@ class BuildingController extends DefaultController
     }
 
     /**
-     * @Route("/level-up/{building}/readyOn/{readyOn}", name="level-up_readyOn", requirements={"building"="[A-Za-z]+","readyOn"="[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}"})
+     * @Route("/level-up/{building}/readyOn/{readyOn}", name="level-up_readyOn",
+     *     requirements={"building"="[A-Za-z]+","readyOn"="[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}"})
      */
     public function readyAction(Request $request, $building, $readyOn){
         $user = new User();
@@ -74,7 +78,8 @@ class BuildingController extends DefaultController
             return $this->redirectToRoute("logout");//TODO: this can and must never be reached
         }
 
-        $kingdomId = $em->getRepository(User::class)->findOneBy(["nickname"=>$user->getNickname()])->getKingdomId();
+        $kingdomId = $em->getRepository(User::class)
+            ->findOneBy(["nickname"=>$user->getNickname()])->getKingdomId();
 
         $bldngInUK = $this->getBuildingsInKingdom($em, $kingdomId);
         if($bldngInUK instanceof Response){ return $bldngInUK; }
@@ -90,7 +95,9 @@ class BuildingController extends DefaultController
             return $this->redirectToRoute("homepage");
         }
 
-        $em->getRepository(Building::class)->setReadyOn($kingdomId, $try->getName(), null, true);
+        $em->getRepository(Building::class)
+            ->setReadyOn($kingdomId, $try->getName(), null, true);
+
         $em->flush();
 
         return $this->redirectToRoute("homepage");
@@ -109,10 +116,13 @@ class BuildingController extends DefaultController
         }
         $user->setNickname($checkNickname);
 
-        $kingdomId = $em->getRepository(User::class)->findOneBy([ "nickname" => $user->getNickname() ])->getKingdomId();
+        $kingdomId = $em->getRepository(User::class)
+            ->findOneBy([ "nickname" => $user->getNickname() ])->getKingdomId();
+
         $user->setKingdomId($kingdomId);
 
-        $UK_name = $em->getRepository(Kingdom::class)->findOneBy([ "id" => $user->getKingdomId() ])->getName();
+        $UK_name = $em->getRepository(Kingdom::class)
+            ->findOneBy([ "id" => $user->getKingdomId() ])->getName();
 
         $resOfUK = $this->getResources($em, $user);
         if($resOfUK instanceof Response){ return $resOfUK; }
@@ -126,6 +136,7 @@ class BuildingController extends DefaultController
         $unitsInUK = $this->getUnitsInKingdom($em, $user->getKingdomId());
         if($unitsInUK instanceof Response){ return $unitsInUK; }
 
+        $maxUnitCountArr = [];
         foreach($unitsInUK as $item){
             $tmp = $this->prepareNBLGname($em, $bldngInUK, $item->getName(), $item->getNBLGname(), true);
             if($tmp instanceof Response){ return $tmp; }
@@ -136,6 +147,13 @@ class BuildingController extends DefaultController
             if($tmp instanceof Response){ return $tmp; }
             $item->setResNPUGname($tmp);
             $tmp = null;
+
+            $maxUnitCountArr[$item->getName()] = $this
+                ->getMaxUnitCount($em, $kingdomId, $item->getName(), $item->getResNPUGname());
+
+            if($item->getNBLGname() != 'no need'){
+                $maxUnitCountArr[$item->getName()] = 0;
+            }
         }
 
         $em->flush();
@@ -146,12 +164,14 @@ class BuildingController extends DefaultController
             "kingdom_name" => $UK_name,
             "resOfUK" => $resOfUK,
             "maxResOfUK" => $maxResOfUK,
-            "unitsInUK" => $unitsInUK
+            "unitsInUK" => $unitsInUK,
+            "maxUnitCountArr" => $maxUnitCountArr
         ]);
     }
 
     /**
-     * @Route("/unit/order/{unit}/count/{count}", name="order_specific_unit_count", requirements={"unit"="[A-Za-z_]+","count"="[0-9]+"})
+     * @Route("/unit/order/{unit}/count/{count}", name="order_specific_unit_count",
+     *     requirements={"unit"="[A-Za-z_]+","count"="[0-9]+"})
      */
     public function confirmOrderUnitAction(Request $request, $unit, $count){
         $user = new User();
@@ -163,43 +183,24 @@ class BuildingController extends DefaultController
         }
         $user->setNickname($checkNickname);
 
-        $kingdomId = $em->getRepository(User::class)->findOneBy([ "nickname" => $user->getNickname() ])->getKingdomId();
+        $kingdomId = $em
+            ->getRepository(User::class)->findOneBy([ "nickname" => $user->getNickname() ])
+            ->getKingdomId();
+
         $user->setKingdomId($kingdomId);
-
-        $resOfUK = $this->getResources($em, $user);
-        if($resOfUK instanceof Response){ return $resOfUK; }
-
-        $maxResOfUK = $this->getMaxResources($em, $user);
-        if($maxResOfUK instanceof Response){ return $maxResOfUK; }
-
-        // to down
-
-        $bldngInUK = $this->getBuildingsInKingdom($em, $user->getKingdomId());
-        if($bldngInUK instanceof Response){ return $bldngInUK; }
 
         $unitsInUK = $this->getUnitsInKingdom($em, $user->getKingdomId());
         if($unitsInUK instanceof Response){ return $unitsInUK; }
 
-        foreach($unitsInUK as $item){
-            $tmp = $this->checkNBLUnit($em, $item->getName(), $kingdomId);
-            if($tmp instanceof Response){ return $tmp; }
-            $item->setNBLGname($tmp);
-            $tmp = null;
-
-            $tmp = $this->checkResNPU($em, $item->getName(), $item->getResNPUGname());
-            if($tmp instanceof Response){ return $tmp; }
-            $item->setResNPUGname($tmp);
-            $tmp = null;
-        }
-
-        // stop here
-
         $unitId = null;
         $unitOrderCount = 0;
+        $unitTimePU = 0;
         foreach($unitsInUK as $item){
-            if($item->getName() == $unit && $item->getOrderCount() == 0){
+            if($item->getName() == $unit){
                 $unitId = $item->getId();
-                $unitOrderCount = $item->getOrderCount(); break;
+                $unitOrderCount = $item->getOrderCount();
+                $unitTimePU = $item->getTimePU();
+                break;
             }
         }
 
@@ -207,10 +208,90 @@ class BuildingController extends DefaultController
             return $this->redirectToRoute("homepage");
         }
 
-        $em->getRepository(Unit::class)->setOrderCount($kingdomId, $unitId, ($unitOrderCount + $count));
+        $testNBL = $this->checkNBLUnit($em, $unitsInUK, $unit, $kingdomId);
+        if($testNBL instanceof Response){ return $testNBL; }
+
+        if(!$testNBL){
+            return $this->redirectToRoute("homepage");
+        }
+
+        $testResNPU = $this->checkResNPU($em, $unit, $count, $kingdomId);
+
+        if(!$testResNPU){
+            $dt = new \DateTime();
+            $dt->setTimezone(new \DateTimeZone('Europe/Sofia'));
+            $now = $dt->format("Y-m-d H:i:s");
+            $readyOn = $dt->setTimestamp($dt->getTimestamp() + ($unitTimePU * ($unitOrderCount + $count)))->format("Y-m-d H:i:s");
+
+            $em->getRepository(Unit::class)
+                ->setOrderCount($kingdomId, $unitId, ($unitOrderCount + $count), $unitTimePU, $now, $readyOn);
+        }
+
         $em->flush();
 
         return $this->redirectToRoute("homepage");
+    }
+
+    /**
+     * @Route("/attack", name="attack")
+     */
+    public function attackAction(Request $request){
+        $user = new User();
+        $em = $this->getDoctrine()->getManager();
+
+        $checkNickname = $this->checkNickname($em, new Session());
+        if($checkNickname instanceof Response){
+            return $checkNickname;
+        }
+        $user->setNickname($checkNickname);
+
+        $kingdomId = $em->getRepository(User::class)
+            ->findOneBy([ "nickname" => $user->getNickname() ])->getKingdomId();
+
+        $user->setKingdomId($kingdomId);
+
+        $UK_name = $em->getRepository(Kingdom::class)
+            ->findOneBy([ "id" => $user->getKingdomId() ])->getName();
+
+        $resOfUK = $this->getResources($em, $user);
+        if($resOfUK instanceof Response){ return $resOfUK; }
+
+        $maxResOfUK = $this->getMaxResources($em, $user);
+        if($maxResOfUK instanceof Response){ return $maxResOfUK; }
+
+        $bldngInUK = $this->getBuildingsInKingdom($em, $user->getKingdomId());
+        if($bldngInUK instanceof Response){ return $bldngInUK; }
+        foreach($bldngInUK as $building){
+            if($building->getId() == $this::PALACE_ID && $building->getLevel() == 0){
+                return $this->redirectToRoute("homepage");
+            }
+        }
+
+        $kingdoms = $em->getRepository(Kingdom::class)->findAll();
+        foreach($kingdoms as $key => $value){
+            if($value->getId() == $kingdomId){
+                array_splice($kingdoms, $key,1); break;
+            }
+        }
+
+        $users = [];
+        foreach($kingdoms as $kingdom){
+            $users[$kingdom->getId()] = $em->getRepository(User::class)->findOneBy([
+                "kingdomId" => $kingdom->getId()
+            ])->getNickname();
+        }
+
+        $em->flush();
+
+        return $this->render('login/attack.html.twig', [
+            "is_logged" => true,
+            "nickname" => $user->getNickname(),
+            "kingdom_name" => $UK_name,
+            "resOfUK" => $resOfUK,
+            "maxResOfUK" => $maxResOfUK,
+            "kingdoms" => $kingdoms,
+            "users" => $users
+        ]);
     }
 
     private function checkResNPL(ObjectManager $em, $building_name, $building_level, $kingdomId){
@@ -225,17 +306,17 @@ class BuildingController extends DefaultController
         }
 
         $return = [];
-        foreach($NPLOfBuilding as $item){
-            foreach($resOfUK as $item2){
-                if(!array_key_exists($item2['name'], $return)){
-                    $return[$item2['name']] = 0;
+        foreach($NPLOfBuilding as $resNeed){
+            foreach($resOfUK as $resHave){
+                if(!array_key_exists($resHave['name'], $return)){
+                    $return[$resHave['name']] = intval($resHave['value']);
+                    $resNeed['value'] = (intval($resNeed['value']) * ($building_level + 1));
                 }
-                $item['value'] = ($item['value'] * ($building_level + 1));
 
-                if($item['name'] == $item2['name'] && $item2['value'] < $item['value']){
+                if($resNeed['name'] == $resHave['name'] && intval($resHave['value']) < intval($resNeed['value'])){
                     return false;
-                }elseif($item['name'] == $item2['name'] && $item2['value'] >= $item['value']){
-                    $return[$item2['name']] += $item2['value'] - $item['value'];
+                }elseif($resNeed['name'] == $resHave['name'] && intval($resHave['value']) >= intval($resNeed['value'])){
+                    $return[$resHave['name']] -= intval($resNeed['value']);
                 }
             }
         }
@@ -265,23 +346,53 @@ class BuildingController extends DefaultController
         return false;
     }
 
-//    private function checkNBLUnit(ObjectManager $em, $unit_name, $kingdomId){
-//        $bldngInUK = $this->getBuildingsInKingdom($em, $kingdomId);
-//        if($bldngInUK instanceof Response){ return $bldngInUK; }
-//
-//        $NBLGname = null;
-//        foreach($bldngInUK as $item){
-//            if($item->getName() == $unit_name){
-//                $NBLGname = $item->getNBLGname(); break;
-//            }
-//        }
-//
-//        if($this->prepareNBLGname($em, $bldngInUK, $unit_name, $NBLGname) == 'no need'){
-//            return true;
-//        }
-//
-//        return false;
-//    }
+    private function checkNBLUnit(ObjectManager $em, array $unitsInUK, $unit_name, $kingdomId){
+        $bldngInUK = $this->getBuildingsInKingdom($em, $kingdomId);
+        if($bldngInUK instanceof Response){ return $bldngInUK; }
+
+        $NBLGname = null;
+        foreach($unitsInUK as $item){
+            if($item->getName() == $unit_name){
+                $NBLGname = $item->getNBLGname(); break;
+            }
+        }
+
+        if($this->prepareNBLGname($em, $bldngInUK, $unit_name, $NBLGname, true) == 'no need'){
+            return true;
+        }
+
+        return false;
+    }
+
+    private function checkResNPU(ObjectManager $em, $unit_name, $unit_count, $kingdomId){
+
+        $try = $em->getRepository(Unit::class)->getNPUOfUnit($unit_name);
+        $resOfUK = $em->getRepository(Kingdom::class)->getResourcesForKingdom($kingdomId);
+
+        $return = [];
+        foreach($try as $resNeed){
+            foreach($resOfUK as $resHave){
+                if(!array_key_exists($resHave['name'], $return)){
+                    $return[$resHave['name']] = 0;
+                }
+
+                $resNeed['value'] = ($resNeed['value'] * $unit_count);
+
+                if($resNeed['name'] == $resHave['name'] && $resHave['value'] < $resNeed['value']){
+                    return false;
+                }elseif($resNeed['name'] == $resHave['name'] && $resHave['value'] >= $resNeed['value']){
+                    $return[$resHave['name']] += $resHave['value'] - $resNeed['value'];
+                }
+            }
+        }
+
+        foreach($return as $key => $value){
+            $em->getRepository(Kingdom::class)->subtractResourcesForKingdom($kingdomId, $key, $value);
+            $em->flush();
+        }
+
+        return true;
+    }
 
     private function getUnitsInKingdom(ObjectManager $em, int $kingdomId){
         $try = $em->getRepository(Kingdom::class)->getUnitsInKingdom($kingdomId);
@@ -299,6 +410,7 @@ class BuildingController extends DefaultController
             $tmp2->setNBLGname(intval($item['id_needBldngL']));
             $tmp2->setTimePU(intval($item['timePU']));
             $tmp2->setCount(intval($item['count']));
+            $tmp2->setOrderCount(intval($item['order_count']));
             $unitsInUK[] = $tmp2;
             unset($tmp2);
         }
@@ -321,5 +433,47 @@ class BuildingController extends DefaultController
         }
 
         return implode(", ", $arr);
+    }
+
+    private function getMaxUnitCount(ObjectManager $em, int $kingdom_id, $unit_name, $ResNPUGname){
+        if($ResNPUGname == null){
+            return 0;
+        }
+
+        $resInUK = $em->getRepository(Kingdom::class)->getResourcesForKingdom($kingdom_id);
+        if(empty($resInUK)){
+            return $this->redirectToRoute("logout");//TODO: this must never be reached
+        }
+
+        $try = $em->getRepository(Unit::class)->getNPUOfUnit($unit_name);
+        if(empty($try)){
+            return $this->redirectToRoute("logout");//TODO: this must never be reached
+        }
+
+        $arr = [];
+        $return = [];
+        foreach($try as $resNeed){
+            foreach($resInUK as $resHave){
+                if($resHave['name'] == $resNeed['name']
+                    && intval($resHave['value']) < intval($resNeed['value'])){
+                    return 0;
+                }elseif($resHave['name'] == $resNeed['name']
+                    && intval($resHave['value']) >= intval($resNeed['value'])){
+                    if(!array_key_exists($resNeed['name'], $arr)){
+                        $arr[$resNeed['name']] = 0;
+                    }
+                    $arr[$resNeed['name']] = intval($resHave['value']) / intval($resNeed['value']);
+                    while($arr[$resNeed['name']] > 0){
+                        if(!array_key_exists($resNeed['name'], $return)){
+                            $return[$resNeed['name']] = 0;
+                        }
+                        $return[$resNeed['name']] += 1;
+                        $arr[$resNeed['name']]--;
+                    }
+                }
+            }
+        }
+
+        return max(min($return), 0);
     }
 }

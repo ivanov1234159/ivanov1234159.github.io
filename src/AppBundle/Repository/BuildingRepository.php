@@ -31,7 +31,7 @@ WHERE kngdm_bldng.id_building = building.id and kngdm_bldng.id_kingdom = ? and b
         }
 
         if(!$only){
-            $create_event = $db->prepare("create EVENT `Level-Up".$id_kingdom.$building_name."`
+            $create_event = $db->prepare("create EVENT IF NOT EXISTS `Level-Up".$id_kingdom.$building_name."`
         ON SCHEDULE AT '".$readyOn."'
         DO
             update kngdm_bldng INNER JOIN building
@@ -40,15 +40,24 @@ WHERE kngdm_bldng.id_building = building.id and kngdm_bldng.id_kingdom = ? and b
             and kngdm_bldng.id_kingdom = ".$id_kingdom."
             and building.name = '".$building_name."';");
             $create_event->execute();
+            $alter_event = $db->prepare("ALTER EVENT `Level-Up".$id_kingdom.$building_name."`
+        ON SCHEDULE AT '".$readyOn."'
+        DO
+            update kngdm_bldng INNER JOIN building
+            set kngdm_bldng.`level` = (kngdm_bldng.`level` + 1)
+            WHERE kngdm_bldng.id_building = building.id
+            and kngdm_bldng.id_kingdom = ".$id_kingdom."
+            and building.name = '".$building_name."';");
+            $alter_event->execute();
         }
 
         $set_ready_on = $db->prepare("update kngdm_bldng 
 inner join building 
-set ready_on=? 
-where kngdm_bldng.id_building=building.id 
-and kngdm_bldng.id_kingdom=? 
-and building.name=?;");
-        $set_ready_on->execute([ $readyOn, $id_kingdom, $building_name]);
+set kngdm_bldng.ready_on = ? 
+where kngdm_bldng.id_building = building.id 
+and kngdm_bldng.id_kingdom = ".$id_kingdom." 
+and building.name = '".$building_name."';");
+        $set_ready_on->execute([ $readyOn ]);
     }
 
     public function getGPHOfBuilding(string $building_name){

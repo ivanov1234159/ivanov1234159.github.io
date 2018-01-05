@@ -104,6 +104,9 @@ class RegisterController extends Controller
 
         $try = $em->getRepository(Building::class)->findAll();
         foreach($try as $item){
+            if($item->getLevel() == null){
+                $item->setLevel(0);
+            }
             $em->getRepository(Kingdom::class)
                 ->setBuildingsInKingdom($kingdom->getId(), $item->getName(), $item->getLevel());
         }
@@ -111,6 +114,9 @@ class RegisterController extends Controller
 
         $try = $em->getRepository(Unit::class)->findAll();
         foreach($try as $item){
+            if($item->getCount() == null){
+                $item->setCount(0);
+            }
             $em->getRepository(Kingdom::class)
                 ->setUnitsInKingdom($kingdom->getId(), $item->getName(), $item->getCount());
         }

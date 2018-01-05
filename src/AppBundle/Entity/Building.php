@@ -79,7 +79,7 @@ class Building implements BuildingInterface
     private $level;
 
     /**
-     * @var \DateTime
+     * @var \DateTime|null|string
      *
      * @ORM\JoinTable(name="kngdm_bldng", joinColumns={
      *     @ORM\JoinColumn(name="id_building", referencedColumnName="id", fieldName="ready_on")})
@@ -214,9 +214,9 @@ class Building implements BuildingInterface
         $this->level = $level;
     }
     /**
-     * @return int
+     * @return int|null
      */
-    public function getLevel(): int
+    public function getLevel()
     {
         return $this->level;
     }

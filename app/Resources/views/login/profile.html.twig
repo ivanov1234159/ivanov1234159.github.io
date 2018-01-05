@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1 align="center">{{ kingdom_name }}</h1>
+    <hr/>
+    <table border="1" align="center">
+        <tr>
+            {% for resource,value in resOfUK %}
+                <td><b>{{ resource }}: {{ value }}</b></td>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for maxValue in maxResOfUK %}
+                <td><b>MAX: {{ maxValue }}</b></td>
+            {% endfor %}
+        </tr>
+    </table>
+    <hr/>
+    <table border="1" align="center">
+        <tr align="center" style="background-color: #aaaaaa;">
+            <td><b>Id</b>
+            <td><b>Nickname</b>
+            <td><b>Username</b>
+            <td><b>Email</b></td>
+            <td><b>Date created</b></td>
+        </tr>
+        <tr align="center">
+            <td>{{ user.id }}</td>
+            <td>{{ user.nickname }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.dateCreated|date("Y-m-d H:i:s") }}</td>
+        </tr>
+        <tr align="center" style="background-color: #cccccc;">
+            <td colspan="2"><b>Change nickname</b></td>
+            <td><b>Change username</b></td>
+            <td><b>Change email</b></td>
+            <td><b>Change password</b></td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <form method="post" autocomplete="off">
+                    <input type="text" name="new_username" placeholder="New nickname" required/><br/>
+                    <input type="password" name="old_pass" placeholder="Confirm with password" required/><br/>
+                    <input type="submit" name="set_new_username" value="Update nickname"/>
+                </form>
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1 align="center">{{ kingdom_name }}</h1>
+    <hr/>
+    <table border="1" align="center">
+        <tr>
+            {% for resource,value in resOfUK %}
+                <td><b>{{ resource }}: {{ value }}</b></td>
+            {% endfor %}
+        </tr>
+        <tr>
+            {% for maxValue in maxResOfUK %}
+                <td><b>MAX: {{ maxValue }}</b></td>
+            {% endfor %}
+        </tr>
+    </table>
+    <hr/>
+    <table border="1" align="center">
+        <tr>
+            <td align="center" style="width: 50px"><b>#</b></td>
+            <td align="center" style="width: 500px"><b>Kingdom</b></td>
+            <td align="center" style="width: 200px"><b>Nickname</b></td>
+            <td align="center" style="width: 200px" colspan="2"><b>Actions</b></td>
+        </tr>
+    {% for order, kingdom in kingdoms %}
+        <tr>
+            <td align="center">{{ order+1 }}</td>
+            <td>{{ kingdom.name }}({{ kingdom.coordinateX }}:{{ kingdom.coordinateY }})</td>
+            <td align="center">{{ users[kingdom.id] }}</td>
+            <td align="center"><a href="/profile/{{ users[kingdom.id] }}">See user</a></td>
+            <td align="center"><a href="/attack/{{ kingdom.id }}">Attack</a></td>
+        </tr>
+    {% endfor %}
+    </table>
+{% endblock %}
